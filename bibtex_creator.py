@@ -157,18 +157,24 @@ class BibtexCreator:
         
         return entry
     
-    def create_bibtex_from_dois(self, dois: List[str], key_prefix: str = "ref") -> List[str]:
+    def create_bibtex_from_dois(self, dois: List[str], key_prefix: str = "ref", keys: Optional[List[str]] = None) -> List[str]:
         """
         Create BibTeX entries from a list of DOIs.
         
         Args:
             dois (List[str]): List of DOIs to fetch and convert
             key_prefix (str): Prefix for BibTeX entry keys (default: "ref")
+            keys (Optional[List[str]]): List of specific keys to use for BibTeX entries. 
+                                      If provided, will use these instead of key_prefix.
             
         Returns:
             List[str]: List of BibTeX entries as strings
         """
         bibtex_entries = []
+        
+        # Validate keys if provided
+        if keys is not None and len(keys) != len(dois):
+            raise ValueError(f"Number of keys ({len(keys)}) must match number of DOIs ({len(dois)})")
         
         for i, doi in enumerate(dois):
             if not doi or not doi.strip():
@@ -184,7 +190,10 @@ class BibtexCreator:
                 continue
             
             # Create BibTeX entry
-            entry_key = f"{key_prefix}{i+1:03d}"
+            if keys is not None:
+                entry_key = keys[i]
+            else:
+                entry_key = f"{key_prefix}{i+1:03d}"
             bibtex_entry = self.crossref_to_bibtex_entry(paper_data, entry_key)
             
             # Convert to BibTeX string
@@ -208,7 +217,7 @@ class BibtexCreator:
 
 
 def create_bibtex_from_dois(dois: List[str], email: Optional[str] = None, 
-                           key_prefix: str = "ref", delay: float = 1.0) -> List[str]:
+                           key_prefix: str = "ref", delay: float = 1.0, keys: Optional[List[str]] = None) -> List[str]:
     """
     Convenience function to create BibTeX entries from DOIs.
     
@@ -217,12 +226,14 @@ def create_bibtex_from_dois(dois: List[str], email: Optional[str] = None,
         email (Optional[str]): Email address for CrossRef API (recommended)
         key_prefix (str): Prefix for BibTeX entry keys (default: "ref")
         delay (float): Delay between API requests in seconds (default: 1.0)
+        keys (Optional[List[str]]): List of specific keys to use for BibTeX entries. 
+                                  If provided, will use these instead of key_prefix.
         
     Returns:
         List[str]: List of BibTeX entries as strings
     """
     creator = BibtexCreator(email=email, delay=delay)
-    return creator.create_bibtex_from_dois(dois, key_prefix)
+    return creator.create_bibtex_from_dois(dois, key_prefix, keys)
 
 
 if __name__ == "__main__":
@@ -232,12 +243,27 @@ if __name__ == "__main__":
         "10.1016/j.ijhcs.2021.102899"
     ]
     
+    # Example 1: Using key prefix
     bibtex_entries = create_bibtex_from_dois(
         sample_dois, 
         email="your.email@example.com",  # Replace with your email
         key_prefix="example"
     )
     
+    print("Example 1 - Using key prefix:")
     for entry in bibtex_entries:
+        print(entry)
+        print("-" * 50)
+    
+    # Example 2: Using specific keys
+    custom_keys = ["smith2021", "jones2021"]
+    bibtex_entries_custom = create_bibtex_from_dois(
+        sample_dois,
+        email="your.email@example.com",  # Replace with your email
+        keys=custom_keys
+    )
+    
+    print("\nExample 2 - Using custom keys:")
+    for entry in bibtex_entries_custom:
         print(entry)
         print("-" * 50)
